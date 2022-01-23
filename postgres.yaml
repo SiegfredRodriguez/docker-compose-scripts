@@ -1,0 +1,16 @@
+version: "2.4"
+
+
+services:
+  postgres:
+    image: "postgres:${VERSION}"
+    ports: 
+      - ${port}:5432
+    environment:
+      - POSTGRES_USER=${user}
+      - POSTGRES_PASSWORD=${password}
+    mem_limit: 512m
+    volumes:
+      - ${host_storage}:/var/lib/postgresql/data
+
+    
