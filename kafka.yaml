@@ -1,0 +1,40 @@
+version: "2.4"
+
+networks:
+  kafka-local:
+    driver: bridge
+
+services:
+  zookeeper1:
+    image: zookeeper:3.8.0
+    hostname: zookeeper1
+    # We don't need to expose to host for now.
+    #ports:
+    #  - 2181:2181 # client port
+    #   - 2888:2888 # follower port
+    #   - 3888:3888 # election port
+    # - 8080:8080 # AdminServer
+    networks:
+      - kafka-local
+    environment:
+      ZOO_STANDALONE_ENABLED: true
+  kafka1:
+    depends_on:
+      - zookeeper1
+    image: confluentinc/cp-kafka:7.1.2
+    hostname: kafka1
+    ports:
+      - 9092:9092
+    networks:
+      - kafka-local
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper1:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: L_APP:PLAINTEXT,L_BROKER:PLAINTEXT
+      KAFKA_LISTENERS: L_APP://kafka1:9092,L_BROKER://kafka1:9191
+      KAFKA_ADVERTISED_LISTENERS: L_APP://localhost:9092,L_BROKER://kafka1:9191
+      KAFKA_INTER_BROKER_LISTENER_NAME: L_BROKER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+  probe:
+    image: siegfredrodriguez/utility-probe:latest
+    networks:
+      - kafka-local
