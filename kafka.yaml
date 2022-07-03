@@ -1,4 +1,22 @@
-version: "2.4"
+##################################
+#
+#   Development and demonstration Kafka deployment with registry.
+#
+#   Versions
+#     zookeeper:        3.8.0
+#     kafka:            7.1.2 (Confluent)
+#     schema-registry:  3.2.0 (Karapace)
+#   
+#   HOST exposed Ports:
+#     zookeeper:        NOT EXPOSED, INTERNAL USE ONLY.
+#     kafka:            9092 (advertised localhost:9092)
+#     schema-registry:  9182
+#
+#   Changes:
+#     07-03-2022  J-dar Siegfred A. Rodriguez
+#
+##################################
+version: "3.8" # To keep resource restraints
 
 networks:
   kafka-local:
@@ -8,16 +26,14 @@ services:
   zookeeper1:
     image: zookeeper:3.8.0
     hostname: zookeeper1
-    # We don't need to expose to host for now.
-    #ports:
-    #  - 2181:2181 # client port
-    #   - 2888:2888 # follower port
-    #   - 3888:3888 # election port
-    # - 8080:8080 # AdminServer
     networks:
       - kafka-local
     environment:
       ZOO_STANDALONE_ENABLED: true
+    deploy:
+      resources:
+        limits:
+          memory: 512M
   kafka1:
     depends_on:
       - zookeeper1
@@ -29,12 +45,38 @@ services:
       - kafka-local
     environment:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper1:2181
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: L_APP:PLAINTEXT,L_BROKER:PLAINTEXT
-      KAFKA_LISTENERS: L_APP://kafka1:9092,L_BROKER://kafka1:9191
-      KAFKA_ADVERTISED_LISTENERS: L_APP://localhost:9092,L_BROKER://kafka1:9191
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: L_APPS:PLAINTEXT,L_BROKER:PLAINTEXT,L_CONTAINERS:PLAINTEXT
+      KAFKA_LISTENERS: L_APPS://kafka1:9092,L_BROKER://kafka1:9191,L_CONTAINERS://kafka1:9192
+      KAFKA_ADVERTISED_LISTENERS: L_APPS://localhost:9092,L_BROKER://kafka1:9191,L_CONTAINERS://kafka1:9192
       KAFKA_INTER_BROKER_LISTENER_NAME: L_BROKER
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-  probe:
-    image: siegfredrodriguez/utility-probe:latest
+      KAFKA_SOCKET_REQUEST_MAX_BYTES: 300000000
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+  schema-registry:
+    depends_on:
+      - kafka1
+    image: ghcr.io/aiven/karapace:3.2.0
+    hostname: schema-registry
+    entrypoint:
+      - /bin/bash
+      - /opt/karapace/start.sh
+      - registry
+    ports:
+      - 9182:9182
     networks:
       - kafka-local
+    environment:
+      KARAPACE_BOOTSTRAP_URI: kafka1:9192
+      KARAPACE_PORT: 9182
+      KARAPACE_HOST: schema-registry
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+  # probe:
+  #   image: siegfredrodriguez/utility-probe:latest
+  #   networks:
+  #     - kafka-local
