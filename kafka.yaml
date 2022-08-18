@@ -29,7 +29,7 @@ services:
     networks:
       - kafka-local
     environment:
-      ZOO_STANDALONE_ENABLED: true
+      ZOO_STANDALONE_ENABLED: 'true'
     deploy:
       resources:
         limits:
