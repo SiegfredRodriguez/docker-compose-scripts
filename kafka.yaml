@@ -28,6 +28,8 @@ services:
     hostname: zookeeper1
     networks:
       - kafka-local
+    ports:
+      - 2181:2181
     environment:
       ZOO_STANDALONE_ENABLED: 'true'
     deploy:
@@ -51,6 +53,7 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: L_BROKER
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_SOCKET_REQUEST_MAX_BYTES: 300000000
+      KAFKA_TOPICS: siegfred
     deploy:
       resources:
         limits:
@@ -58,7 +61,7 @@ services:
   schema-registry:
     depends_on:
       - kafka1
-    image: ghcr.io/aiven/karapace:3.2.0
+    image: ghcr.io/aiven/karapace:3.3.1
     hostname: schema-registry
     entrypoint:
       - /bin/bash
